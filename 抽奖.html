@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ff6b6b">
+<title>生活随机决策器</title>
+<style>
+  /* ========== 基础重置 ========== */
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #fff8f0;
+    --card: #ffffff;
+    --text: #2d2d2d;
+    --muted: #8a8a8a;
+    --accent: #ff6b6b;
+    --accent2: #ffa94d;
+    --accent3: #4dabf7;
+    --accent4: #9775fa;
+    --accent5: #38d9a9;
+    --radius: 20px;
+    --shadow: 0 4px 20px rgba(0,0,0,0.06);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px 16px 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  header { text-align: center; margin-bottom: 24px; }
+  header h1 { font-size: 24px; letter-spacing: 1px; }
+  header p { color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  /* ========== 卡片网格 ========== */
+  .grid {
+    width: 100%;
+    max-width: 1100px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  @media (min-width: 720px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+    .grid > .card:nth-child(5) { grid-column: 1 / -1; } /* 谁买单横跨 */
+  }
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.4s ease both;
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--card-accent, var(--accent));
+  }
+  .card h2 { font-size: 17px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .emoji { font-size: 20px; }
+
+  /* ========== 结果展示区 ========== */
+  .result {
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--card-accent, var(--accent));
+    background: color-mix(in srgb, var(--card-accent, var(--accent)) 8%, transparent);
+    border-radius: 14px;
+    padding: 12px;
+    transition: transform 0.15s ease;
+    word-break: break-word;
+  }
+  .result.pop { animation: pop 0.35s ease; }
+  @keyframes pop {
+    0% { transform: scale(0.85); opacity: 0.4; }
+    60% { transform: scale(1.06); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .result small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 4px; }
+
+  /* ========== 按钮 ========== */
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  button {
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 20px;
+    cursor: pointer;
+    background: var(--card-accent, var(--accent));
+    color: #fff;
+    transition: transform 0.12s ease, filter 0.12s ease;
+    flex: 1;
+    min-width: 110px;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:active { transform: scale(0.96); }
+  button.ghost {
+    background: transparent;
+    color: var(--card-accent, var(--accent));
+    border: 1.5px solid currentColor;
+  }
+
+  /* ========== 选项管理 ========== */
+  .options-box {
+    border-top: 1px dashed #eee;
+    padding-top: 12px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #f4f4f5;
+    color: var(--text);
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  .chip button {
+    all: unset;
+    cursor: pointer;
+    color: #bbb;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0 2px;
+    flex: 0;
+    min-width: 0;
+  }
+  .chip button:hover { color: var(--accent); }
+  .add-row { display: flex; gap: 6px; margin-top: 8px; }
+  .add-row input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #e4e4e7;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+  }
+  .add-row input:focus { border-color: var(--card-accent, var(--accent)); }
+  .add-row button {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  /* ========== 谁买单：转盘 ========== */
+  .wheel-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .wheel {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    position: relative;
+    transition: transform 3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+  }
+  .wheel::after {
+    content: "";
+    position: absolute;
+    top: -10px; left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 16px solid var(--accent5);
+    z-index: 2;
+  }
+  .wheel-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 54px; height: 54px;
+    background: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 1;
+  }
+  .wheel-result {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent5);
+    min-height: 28px;
+  }
+  .player-list { width: 100%; }
+
+  footer {
+    margin-top: 28px;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎲 生活随机决策器</h1>
+  <p>不存数据 · 无需登录 · 刷新即重置</p>
+</header>
+
+<div class="grid" id="grid">
+
+  <!-- 卡片 1：今天吃什么 -->
+  <section class="card" style="--card-accent: var(--accent)" data-tool="eat">
+    <h2><span class="emoji">🍜</span>今天吃什么</h2>
+    <div class="result" id="eat-result">点下面按钮，交给运气</div>
+    <div class="btn-row">
+      <button onclick="rollSimple('eat')">随机一下</button>
+    </div>
+    <div class="options-box">
+      <span>可选食物（点击 × 删除）</span>
+      <div class="chips" id="eat-chips"></div>
+      <div class="add-row">
+        <input type="text" placeholder="加一个想吃的…" id="eat-input" maxlength="12">
+        <button class="ghost" onclick="addOption('eat')">添加</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 卡片 2：今天玩什么 -->
+  <section class="card" style="--card-accent: var(--accent3)" data-tool="play">
+    <h2><span class="emoji">🎯</span>今天玩什么</h2>
+    <div class="result" id="play-result">点下面按钮，交给运气</div>
+    <div class="btn-row">
+      <button onclick="rollSimple('play')">随机一下</button>
+    </div>
+    <div class="options-box">
+      <span>可选活动（点击 × 删除）</span>
+      <div class="chips" id="play-chips"></div>
+      <div class="add-row">
+        <input type="text" placeholder="加一个想玩的…" id="play-input" maxlength="12">
+        <button class="ghost" onclick="addOption('play')">添加</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 卡片 3：聚会主题 -->
+  <section class="card" style="--card-accent: var(--accent4)" data-tool="party">
+    <h2><span class="emoji">🎉</span>聚会主题选择</h2>
+    <div class="result" id="party-result">点下面按钮，交给运气</div>
+    <div class="btn-row">
+      <button onclick="rollSimple('party')">随机一下</button>
+    </div>
+    <div class="options-box">
+      <span>可选主题（点击 × 删除）</span>
+      <div class="chips" id="party-chips"></div>
+      <div class="add-row">
+        <input type="text" placeholder="加一个主题…" id="party-input" maxlength="12">
+        <button class="ghost" onclick="addOption('party')">添加</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 卡片 4：真心话大冒险 -->
+  <section class="card" style="--card-accent: var(--accent2)" data-tool="truth">
+    <h2><span class="emoji">🎭</span>真心话大冒险</h2>
+    <div class="result" id="truth-result">选「真心话」或「大冒险」</div>
+    <div class="btn-row">
+      <button onclick="rollTruth('truth')">真心话</button>
+      <button class="ghost" onclick="rollTruth('dare')">大冒险</button>
+    </div>
+    <div class="options-box">
+      <span>真心话题库（点击 × 删除）</span>
+      <div class="chips" id="truth-chips"></div>
+      <div class="add-row">
+        <input type="text" placeholder="加一条真心话…" id="truth-input" maxlength="30">
+        <button class="ghost" onclick="addOption('truth')">添加</button>
+      </div>
+      <span style="display:block;margin-top:10px;">大冒险题库（点击 × 删除）</span>
+      <div class="chips" id="dare-chips"></div>
+      <div class="add-row">
+        <input type="text" placeholder="加一条大冒险…" id="dare-input" maxlength="30">
+        <button class="ghost" onclick="addOption('dare')">添加</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 卡片 5：今天谁买单 -->
+  <section class="card" style="--card-accent: var(--accent5)" data-tool="payer">
+    <h2><span class="emoji">💸</span>今天谁买单</h2>
+    <div class="wheel-wrap">
+      <div class="wheel" id="wheel"></div>
+      <div class="wheel-result" id="payer-result"></div>
+    </div>
+    <div class="options-box player-list">
+      <span>玩家名单（默认 5 人，点击 × 删除）</span>
+      <div class="chips" id="payer-chips"></div>
+      <div class="add-row">
+        <input type="text" placeholder="加一个名字…" id="payer-input" maxlength="8">
+        <button class="ghost" onclick="addOption('payer')">添加</button>
+      </div>
+      <div class="btn-row" style="margin-top:12px;">
+        <button onclick="spinWheel()">转盘抽一个</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>纯前端 · 不存储任何数据 · 关闭页面即清空</footer>
+
+<script>
+/* ============================================================
+   数据层：默认选项（刷新即恢复）
+   ============================================================ */
+const DEFAULTS = {
+  eat: ["火锅","烧烤","面食","饺子","日料","麻辣烫","家常菜","轻食","川菜","粤菜","披萨","汉堡","螺蛳粉","黄焖鸡","沙拉","炒饭"],
+  play: ["看电影","桌游","打羽毛球","爬山","逛展","KTV","骑行","宅家刷剧","密室逃脱","剧本杀","桌球","保龄球","公园野餐","逛书店","打游戏","City Walk"],
+  party: ["复古派对","睡衣趴","剧本杀之夜","烧烤露营","电影马拉松","Cosplay","桌游之夜","火锅局","K歌之夜","天台酒会","主题晚餐","读书会","德州扑克夜"],
+  truth: [
+    "你最近一次哭是因为什么？",
+    "你手机里最不想让人看到的 APP 是什么？",
+    "你做过最尴尬的一件事是什么？",
+    "你暗恋过身边的人吗？",
+    "你最近一次撒谎是什么时候？",
+    "你最后悔的一个决定是什么？",
+    "你最想删掉的一段回忆是什么？",
+    "你偷偷羡慕过谁？",
+    "你做过最疯狂的事是什么？",
+    "你有没有背着朋友说过他/她坏话？",
+    "你最近一次心动是什么时候？",
+    "你最不想让父母知道的事是什么？",
+    "你花过最不值的一笔钱是多少？",
+    "你有没有假装喜欢过一个人？",
+    "你手机相册最后一张照片是什么？",
+    "你最近一次熬夜到几点，为什么？"
+  ],
+  dare: [
+    "给通讯录第 5 个人发一句「我想你了」",
+    "模仿在场一个人的说话方式 30 秒",
+    "用最夸张的语气唱一首歌的副歌",
+    "做 10 个深蹲",
+    "给微信置顶的人发一个表情包",
+    "现场表演一个才艺",
+    "让左边的人在你脸上画一笔",
+    "用方言说一段绕口令",
+    "对着镜头做一个鬼脸并保持 10 秒",
+    "给最近一条朋友圈点赞并评论",
+    "模仿一种动物叫 15 秒",
+    "和右边的人对视 20 秒不许笑",
+    "现场编一句押韵的顺口溜",
+    "用嘴叼住一张纸巾转三圈",
+    "打电话给一个朋友说「我请你吃饭」",
+    "原地转 10 圈然后走直线"
+  ],
+  payer: ["玩家 1","玩家 2","玩家 3","玩家 4","玩家 5"]
+};
+
+/* 当前会话内的可变选项（内存中，刷新即恢复 DEFAULTS） */
+const state = {};
+for (const key in DEFAULTS) state[key] = [...DEFAULTS[key]];
+
+/* ============================================================
+   工具函数
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+const randInt = (n) => Math.floor(Math.random() * n);
+
+/* 随机抽一个，返回 {value, index} */
+function pick(arr) {
+  const index = randInt(arr.length);
+  return { value: arr[index], index };
+}
+
+/* 结果区动画 */
+function showResult(el, text) {
+  el.innerHTML = text;
+  el.classList.remove("pop");
+  void el.offsetWidth; // 强制重排以重启动画
+  el.classList.add("pop");
+}
+
+/* ============================================================
+   1-3：普通随机工具（吃/玩/主题）
+   ============================================================ */
+function rollSimple(tool) {
+  const arr = state[tool];
+  const el = $(tool + "-result");
+  if (!arr.length) { showResult(el, "没有选项了，先加几个吧"); return; }
+  const { value } = pick(arr);
+  showResult(el, value);
+}
+
+/* ============================================================
+   4：真心话 / 大冒险
+   ============================================================ */
+function rollTruth(type) {
+  const arr = state[type];
+  const el = $("truth-result");
+  if (!arr.length) { showResult(el, "题库空了，先加几条吧"); return; }
+  const { value } = pick(arr);
+  const prefix = type === "truth" ? "💬 真心话<br><small>" : "🔥 大冒险<br><small>";
+  showResult(el, prefix + value + "</small>");
+}
+
+/* ============================================================
+   5：谁买单（转盘）
+   ============================================================ */
+let wheelAngle = 0;        // 当前累计角度
+let spinning = false;
+
+/* 根据玩家数量重新绘制转盘扇形（CSS conic-gradient） */
+function drawWheel() {
+  const wheel = $("wheel");
+  const players = state.payer;
+  const n = players.length;
+  if (!n) {
+    wheel.style.background = "#eee";
+    return;
+  }
+  const colors = ["#ff6b6b","#ffa94d","#4dabf7","#9775fa","#38d9a9","#f783ac","#20c997","#fab005"];
+  const seg = 360 / n;
+  const stops = players.map((_, i) => {
+    const c = colors[i % colors.length];
+    return `${c} ${i * seg}deg ${(i + 1) * seg}deg`;
+  }).join(", ");
+  wheel.style.background = `conic-gradient(${stops})`;
+
+  // 中心 emoji
+  let center = wheel.querySelector(".wheel-center");
+  if (!center) {
+    center = document.createElement("div");
+    center.className = "wheel-center";
+    wheel.appendChild(center);
+  }
+  center.textContent = "🎯";
+}
+
+function spinWheel() {
+  if (spinning) return;
+  const players = state.payer;
+  if (!players.length) { $("payer-result").textContent = "先加几个玩家吧"; return; }
+  spinning = true;
+  $("payer-result").textContent = "";
+
+  const n = players.length;
+  const seg = 360 / n;
+  const winnerIndex = randInt(n);
+  // 指针在正上方（0deg），要让 winnerIndex 扇区中心转到 0deg 位置
+  // 扇区 i 的中心角度 = i*seg + seg/2；转盘顺时针旋转 angle 后该中心到达 -angle
+  // 需要 -angle ≡ -(i*seg + seg/2)  => angle = i*seg + seg/2 (mod 360)
+  const targetAngle = 360 * 6 + (360 - (winnerIndex * seg + seg / 2));
+  wheelAngle += targetAngle;
+  $("wheel").style.transform = `rotate(${wheelAngle}deg)`;
+
+  setTimeout(() => {
+    $("payer-result").textContent = "👉 " + players[winnerIndex] + " 买单！";
+    spinning = false;
+  }, 3100);
+}
+
+/* ============================================================
+   选项管理：渲染 chips / 添加 / 删除
+   ============================================================ */
+function renderChips(tool) {
+  const box = $(tool + "-chips");
+  box.innerHTML = "";
+  state[tool].forEach((item, i) => {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.textContent = item;
+    const del = document.createElement("button");
+    del.textContent = "×";
+    del.title = "删除";
+    del.onclick = () => { state[tool].splice(i, 1); renderChips(tool); if (tool === "payer") drawWheel(); };
+    chip.appendChild(del);
+    box.appendChild(chip);
+  });
+}
+
+function addOption(tool) {
+  const input = $(tool + "-input");
+  const val = input.value.trim();
+  if (!val) return;
+  state[tool].push(val);
+  input.value = "";
+  renderChips(tool);
+  if (tool === "payer") drawWheel();
+}
+
+/* 回车快速添加 */
+["eat","play","party","truth","dare","payer"].forEach(tool => {
+  const input = $(tool + "-input");
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addOption(tool);
+  });
+});
+
+/* ============================================================
+   初始化
+   ============================================================ */
+["eat","play","party","truth","dare","payer"].forEach(renderChips);
+drawWheel();
+</script>
+</body>
+</html>
